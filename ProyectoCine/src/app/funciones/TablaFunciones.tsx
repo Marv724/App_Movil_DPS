@@ -1,4 +1,4 @@
-import React from "react";
+import React, { ReactElement } from "react";
 import { useAppSelector } from "../../redux/hooks";
 import FuncionFila from "./FuncionFila"
 import {
@@ -8,7 +8,11 @@ import {
     FlatList
 } from "react-native";
 
-export default function TablaFucniones() {
+interface Tablafunciones{
+    ListHeaderComponent? : ReactElement;
+}
+
+export default function TablaFucniones({ListHeaderComponent}: Tablafunciones) {
     const funciones = useAppSelector(
         state => state.funciones.funciones
     );
@@ -32,6 +36,13 @@ export default function TablaFucniones() {
                 data={funciones}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={({item}) => <FuncionFila funcion={item} />}
+                ListHeaderComponent={
+                    <View>
+                        {ListHeaderComponent}
+                        <Text>Tabla funciones</Text>
+                        {renderEncabezado()}
+                    </View>
+                }
                 ListEmptyComponent={
                     <View>
                         <Text>No hay funciones reguistradas</Text>

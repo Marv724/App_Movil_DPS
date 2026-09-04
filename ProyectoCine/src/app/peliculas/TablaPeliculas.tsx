@@ -1,4 +1,4 @@
-import React from "react";
+import React, { ReactElement } from "react";
 import PeliFila from "./PeliculaFila";
 import { useAppSelector } from "../../redux/hooks";
 import {
@@ -9,7 +9,11 @@ import {
     FlatList
 } from "react-native";
 
-export default function TablaPeliculas(){
+interface TablaPelis{
+    ListHeaderComponent? : ReactElement;
+}
+
+export default function TablaPeliculas({ListHeaderComponent}: TablaPelis){
     const pelis = useAppSelector(
         (state) => state.peliculas.peliculas
     );
@@ -38,8 +42,17 @@ export default function TablaPeliculas(){
             data={pelis}
             keyExtractor={(item) => item.codigo.toString()}
             renderItem={({item}) => <PeliFila pelicula={item}/>}
+            ListHeaderComponent={
+                <View>
+                    {ListHeaderComponent}
+                    <Text>Tabla de Peliculas</Text>
+                    {renderEncabezado()}
+                </View>
+            }
             ListEmptyComponent={
-                <Text>No hay peliculas</Text>
+                <View>
+                    <Text>No hay peliculas</Text>
+                </View>
             }
             />
             </View>

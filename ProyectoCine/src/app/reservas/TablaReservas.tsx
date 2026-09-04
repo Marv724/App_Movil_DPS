@@ -1,9 +1,13 @@
-import React from "react";
+import React, { ReactElement } from "react";
 import {View, Text, FlatList, StyleSheet} from "react-native";
 import { useAppSelector } from "../../redux/hooks";
 import ReservaFila from "./ReservaFila";
 
-export default function TablaRervs(){
+interface TablaReserva{
+    ListHeaderComponent? : ReactElement;
+}
+
+export default function TablaRervs({ListHeaderComponent}: TablaReserva){
     const reservas = useAppSelector(state => state.reservas.reservas);
 
     const  renderEncabezado = () => (
@@ -27,9 +31,16 @@ export default function TablaRervs(){
                 data={reservas}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={({item}) => <ReservaFila reserva={item} />}
+                ListHeaderComponent={
+                    <View>
+                        {ListHeaderComponent}
+                        <Text>Tabla de salas</Text>
+                        {renderEncabezado()}
+                    </View>
+                }
                 ListEmptyComponent={
                     <View>
-                        <Text>No hay reservas hechas</Text>
+                        <Text>No hay salas reguistradas</Text>
                     </View>
                 }
                 />

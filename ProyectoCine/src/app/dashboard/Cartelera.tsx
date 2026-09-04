@@ -1,33 +1,47 @@
-import React from "react";
+import React, { ReactElement } from "react";
 import { useAppSelector } from "../../redux/hooks";
 import FuncionCard from "./FuncionCard";
 import {
     View,
     Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
-    FlatList
+    FlatList,
 } from "react-native";
 
-export default function Cartelera() {
+interface CarteleraProps {
+    ListHeaderComponent?: ReactElement;
+}
+
+export default function Cartelera({
+    ListHeaderComponent
+}: CarteleraProps) {
+
     const funciones = useAppSelector(
         state => state.funciones.funciones
     );
 
-    return(
-        <View>
-            <Text>Cartelera</Text>
-            <FlatList
+    return (
+        <FlatList
             data={funciones}
+
             keyExtractor={(item) => item.id.toString()}
-            renderItem={({item}) => <FuncionCard funcion={item} />}
-            ListEmptyComponent={
+
+            renderItem={({ item }) => (
+                <FuncionCard funcion={item} />
+            )}
+
+            ListHeaderComponent={
                 <View>
-                    <Text>No hay funciones disponibles</Text>
+                    {ListHeaderComponent}
+
+                    <Text>Cartelera</Text>
                 </View>
             }
-            />
-        </View>
+
+            ListEmptyComponent={
+                <View>
+                    <Text>No hay en Cartelera</Text>
+                </View>
+            }
+        />
     );
 }

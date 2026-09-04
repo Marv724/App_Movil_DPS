@@ -5,7 +5,6 @@ import Cartelera from "./Cartelera";
 import {
     View,
     Text,
-    ScrollView,
     StyleSheet,
 } from "react-native";
 
@@ -57,8 +56,8 @@ export default function Dashboard(){
         }
     });
 
-    return(
-        <ScrollView>
+    const Resumen = (
+        <View>
             <Text>DashBoard</Text>
             <View>
                 <TargetaEsta titulo="Peliculas" valor={totalPeliculas} />
@@ -69,6 +68,9 @@ export default function Dashboard(){
                 <TargetaEsta titulo="Ingresos" valor={'$${ingresos.toFixed(2)'} />
                 <TargetaEsta titulo="Mas reservados" valor={peliculaMasReserv} />
             </View>
-        </ScrollView>
+        </View>
     );
+    
+    return <Cartelera ListHeaderComponent={Resumen} />
+
 }

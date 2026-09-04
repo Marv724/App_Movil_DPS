@@ -87,14 +87,14 @@ export default function FormularioSala({navigation}: any){
         <View style={styles.container}>
             <TextInput placeholder="ID de la sala" value={sala.id} onChangeText={text => handleChangeText("id",text)}></TextInput>
             <TextInput placeholder="Nombre de sala" value={sala.nombre} onChangeText={text => handleChangeText("nombre", text)}></TextInput>
-            <view>
+            <View>
                 <Picker selectedValue={sala.tipo_butacas} onValueChange={value => handleChangeText("tipo_butacas", value)}>
                 <Picker.Item label="Seleccione un tipo de butaca" value=""/>
                 <Picker.Item label="Tradicionales" value="Tradicionales" />
                 <Picker.Item label="Exclusivas" value="Exclusivas" />
                 <Picker.Item label="Experiencia 4D" value="Experiencia-4D" />
                 </Picker>
-            </view>
+            </View>
             <TextInput placeholder="Cantidad de filas" keyboardType="numeric" value={sala.filas ? String(sala.filas): ""} onChangeText={text => handleChangeText("filas",text)} />
             <TextInput placeholder="Cantidad de columnas" keyboardType="numeric" value={sala.columnas ? String(sala.columnas): ""} onChangeText={text => handleChangeText("columnas",text)} />
             <TouchableOpacity onPress={guardarSala}>
