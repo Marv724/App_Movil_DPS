@@ -10,4 +10,6 @@ export interface Reserva{
 
     total:number;
 
+    fechaReserva: string;
+
 }
