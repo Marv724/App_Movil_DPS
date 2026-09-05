@@ -1,13 +1,15 @@
 import React from "react";
-import { ScrollView } from "react-native";
+import { View, Text } from "react-native";
 import FormularioPeliculas from "../app/peliculas/FormularioPelicula"
 import TablaPeliculas from "../app/peliculas/TablaPeliculas";
 
 export default function PeliScreen(){
     return(
-        <ScrollView contentContainerStyle={{padding: 16}}>
+        <View>
+            <Text>Reguistrar peliculas</Text>
             <FormularioPeliculas />
+            <Text>Tabla de peliculas</Text>
             <TablaPeliculas />
-        </ScrollView>
+        </View>
     );
 }

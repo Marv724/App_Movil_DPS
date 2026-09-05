@@ -1,108 +1,187 @@
 import React from "react";
-import { useEffect, useState } from "react";
+import { useAppDispatch, useAppSelector } from "../../redux/hooks";
+import { Pelicula } from "../../types/pelicula";
+import { useState, useEffect } from "react";
+import { addPelicula, updatePelicula, selectPelicula } from "../../redux/slices/peliculaSlice";
+import { Picker } from "@react-native-picker/picker";
 import {
     View,
     Text,
     TextInput,
     TouchableOpacity,
     StyleSheet,
-    ScrollView
+    Switch
 } from "react-native";
-import { updateReserva, selectReserva } from "../../redux/slices/reservasSlice";
-import { Picker } from "@react-native-picker/picker";
-import { Reserva } from "../../types/reserva";
-import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 
-const reservaIni: Reserva = {
-    id: "",
-    funcionId: "",
-    cantidad: 0,
-    asientos: [],
-    total: 0,
-    fechaReserva: ""
+export const PelisIni: Pelicula = {
+    codigo: "",
+    nombre: "",
+    genero: "",
+    duracion: 0,
+    clasificacion: "",
+    precio: 0,
+    disponible: true,
 };
 
-export default function FormularioResv(){
+export default function FormuPeli(){
+    const[error, setError] = useState("");
+    const[pelicula, setPelicula] = useState<Pelicula>(PelisIni);
+    
     const dispatch = useAppDispatch();
-
-    const reservarS = useAppSelector(
-        state => state.reservas.reservaSeleccionada
+    const peliSelect = useAppSelector(
+        state => state.peliculas.peliculaSeleccionada
     );
-
-    const funciones = useAppSelector(
-        state => state.funciones.funciones
-    );
-
-    const[reserv, setReserv] = useState<Reserva>(reservaIni);
-
-    useEffect(() =>{
-        if(reservarS){
-            setReserv(reservarS);
+    
+    useEffect(() => {
+        if(peliSelect){
+            setPelicula(peliSelect);
         }
-    },[reservarS]);
+    }, [peliSelect]);
 
-    const Guardar = () => {
-        dispatch(updateReserva(reserv));
-        dispatch(selectReserva(null));
-        setReserv(reservaIni);
+    const peliculas = useAppSelector(
+        state => state.peliculas.peliculas
+    );
+
+    const Guardarpeli = () => {
+        const existe = peliculas.some(
+            p => p.codigo === pelicula.codigo
+        );
+
+        if(!pelicula.nombre.trim()){
+            setError("El nombre de la pelicula es obligatorio");
+            return;
+        }
+
+        if(!pelicula.codigo.trim()){
+            setError("El codigo de la pelicula es obligatoria")
+            return;
+        }
+
+        if(!pelicula.genero.trim()){
+            setError("El genero de la pelicula es obligatoria")
+            return;
+        }
+
+        if(pelicula.duracion <= 0){
+            setError("Debe de asignar tiempo a la pelicula")
+            return;
+        }
+
+        if(!pelicula.clasificacion.trim()){
+            setError("Debe de asignar clasificacion a la pelicula")
+            return;
+        }
+
+        if(pelicula.precio <= 0){
+            setError("La pelicula no es gratis, asignar precio")
+            return;
+        }
+
+        if(!peliSelect && existe){
+            setError("Ya existe una pelicula con el mismo codigo")
+            return;
+        }
+
+        if(peliSelect){
+            dispatch(updatePelicula(pelicula));
+        }
+        else{
+            dispatch(addPelicula(pelicula));
+        }
+
+        setPelicula(PelisIni);
+        dispatch(selectPelicula(null));
     }
 
     return(
-        <ScrollView>
-            <Text>Editar reservas</Text>
+        <View>
+            <Text>Reguistro de peliculas</Text>
             <View>
-                <Text>Funcion</Text>
+                <TextInput
+                placeholder="Nombre de la pelicula"
+                value={pelicula.nombre}
+                onChangeText={(Text) =>
+                    setPelicula({...pelicula, nombre: Text})
+                }
+                />
+                <TextInput
+                placeholder="Codigo de la pelicula"
+                value={pelicula.codigo}
+                onChangeText={(Text) =>
+                    setPelicula({
+                        ...pelicula, codigo: Text
+                    })
+                }
+                />
                 <View>
                     <Picker
-                    selectedValue={reservaIni.funcionId}
-                    onValueChange={(ItemValue) =>
-                        setReserv({
-                            ...reserv,
-                            funcionId: ItemValue
+                    selectedValue={pelicula.genero}
+                    onValueChange={(itemValue) =>
+                        setPelicula({
+                            ...pelicula, genero:itemValue
                         })
-                    }
-                    >
-                        <Picker.Item label="Seleccione una funcion" value="" />
-                        {funciones.map(funciones =>
-                            (
-                                <Picker.Item
-                                key={funciones.id}
-                                label={funciones.id}
-                                value={funciones.id}
-                                />
-                            )
-                        )}
+                    }>
+                        <Picker.Item label="Seleccione un genero" value="" />
+                        <Picker.Item label="Accion" value="Accion"/>
+                        <Picker.Item label="Comedia" value="Comedia" />
+                        <Picker.Item label="Drama" value="Drama" />
+                        <Picker.Item label="Terror" value="Terrot" />
+                        <Picker.Item label="Thriller" value="Thriller" />
+                        <Picker.Item label="Ciencia ficcion" value="Ciencia fiction" />
                     </Picker>
                 </View>
-            </View>
-            <View>
-                <Text>Cantidad</Text>
                 <TextInput
-                keyboardType="numeric"
-                value={reservarS?.cantidad ? reservarS.cantidad.toString(): ""}
-                onChangeText={(text) => 
-                    setReserv({
-                        ...reserv,
-                        cantidad: Number(text) || 0
-                    })
-                }
+                    placeholder="Precio de pelicula"
+                    keyboardType="numeric"
+                    value={pelicula.duracion ? pelicula.duracion.toString(): ""}
+                    onChangeText={(text) =>
+                        setPelicula({
+                            ...pelicula, duracion: Number(text) || 0
+                        })
+                    }
                 />
-            </View>
-            <View>
+                <View>
+                    <Picker 
+                    selectedValue={pelicula.clasificacion}
+                    onValueChange={(itemValue) => 
+                        setPelicula({
+                            ...pelicula, clasificacion:itemValue
+                        })
+                    }>
+                        <Picker.Item label="Seleccione una clasifiacion" value="" />
+                        <Picker.Item label="G - todas las audencias" value="G" />
+                        <Picker.Item label="PG - Guia Paternal Sugerida" value="PG" />
+                        <Picker.Item label="PG-13 - Guia Paternal Estricta" value="PG-13" />
+                        <Picker.Item label="NC-17 - Sin Admitir menores de edad y 17" value="NC-17" />
+                        <Picker.Item label="NR - No clasificada" value="NR" />
+                    </Picker>
+                </View>
                 <TextInput
-                keyboardType="numeric"
-                value={reserv.total ? reserv.total.toString(): ""}
-                onChangeText={(text) =>
-                    setReserv({
-                        ...reserv,
-                        total: Number(text) || 0
-                    })
-                }
+                    placeholder="Precio de la pelicula"
+                    keyboardType="numeric"
+                    value={pelicula.precio ? pelicula.duracion.toString(): ""}
+                    onChangeText={(text) =>
+                        setPelicula({
+                            ...pelicula, precio: Number(text) || 0
+                        })
+                    }
                 />
+                <View>
+                    <Text>Disponible</Text>
+                    <Switch
+                    value={pelicula.disponible}
+                    onValueChange={(value: any) =>
+                        setPelicula({
+                            ...pelicula, disponible:value
+                        })
+                    }
+                    />
+                </View>
+                <TouchableOpacity onPress={Guardarpeli}>
+                    <Text>Guardar</Text>
+                </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={Guardar}>
-                <Text>Guardar cambioas</Text>
-            </TouchableOpacity>
-        </ScrollView>
+            {error && <Text>{error}</Text>}
+        </View>
     );
 }
