@@ -65,7 +65,7 @@ export default function Dashboard(){
                 <TargetaEsta titulo="Boletos" valor={boletosVend} />
                 <TargetaEsta titulo="Disponibles" valor={asientosDisp} />
                 <TargetaEsta titulo="Ocupados" valor={asientosOcup}/>
-                <TargetaEsta titulo="Ingresos" valor={'$${ingresos.toFixed(2)'} />
+                <TargetaEsta titulo="Ingresos" valor={ingresos.toFixed(2)} />
                 <TargetaEsta titulo="Mas reservados" valor={peliculaMasReserv} />
             </View>
         </View>

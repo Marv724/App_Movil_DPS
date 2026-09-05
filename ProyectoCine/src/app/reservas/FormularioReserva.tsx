@@ -11,7 +11,7 @@ import {
 import { Picker } from "@react-native-picker/picker";
 import { Reserva } from "../../types/reserva";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
-import { updateReserva, selectReserva } from "../../redux/slices/reservasSlice";
+import { addReserva, selectReserva } from "../../redux/slices/reservasSlice";
 
 const reservaIni: Reserva = {
     id: "",
@@ -41,7 +41,7 @@ export default function FormularioRers(){
     },[reservaSelec]);
 
     const guardar = () => {
-        dispatch(updateReserva(reserva));
+        dispatch(addReserva(reserva));
         dispatch(selectReserva(null));
         setReserva(reservaIni);
     };

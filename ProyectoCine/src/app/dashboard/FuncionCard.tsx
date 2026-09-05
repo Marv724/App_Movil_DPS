@@ -38,13 +38,6 @@ export default function FuncionCard({ funcion }: Props) {
                 <Text>Fecha: {funcion.fecha}</Text>
                 <Text> Hora: {funcion.hora}</Text>
                 <Text>${pelicula.precio.toFixed(2)}</Text>
-                <TouchableOpacity onPress={() => setMostrarModal(true)}>
-                    <Text>Comprar boletos</Text>
-                </TouchableOpacity>
-                <Modalreserv
-                visible={mostrarModal}
-                funcion={funcion}
-                cerrar={() => setMostrarModal(false)} />
             </View>
         </View>
     );

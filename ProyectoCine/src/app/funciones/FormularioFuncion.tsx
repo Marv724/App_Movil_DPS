@@ -91,11 +91,6 @@ export const funcionIni: Funcion = {
             return;
         }
 
-        if(!funcion.salaId){
-            setError("Debe de seleccionar una sala")
-            return;
-        }
-
         if(!funcion.hora){
             setError("Debe de ingresar una hora")
             return;
@@ -123,6 +118,7 @@ export const funcionIni: Funcion = {
         );
         if(ExistHorario){
             setError("Ya hay una funcion en esa sala en el mismo horario")
+            return;
         }
 
         if(funcionSeleccionada){
@@ -142,7 +138,7 @@ export const funcionIni: Funcion = {
             <View>
                 <TextInput
                 placeholder="ID Funcion"
-                placeholderTextColor="#888"
+                placeholderTextColor="ID funcion"
                 value={funcion.id}
                 onChangeText={(text => handleInputChange("id", text))}
                 />
@@ -156,7 +152,8 @@ export const funcionIni: Funcion = {
                         {peliculas.map(pelicula => (
                             <Picker.Item
                             key={pelicula.codigo}
-                            label={pelicula.nombre}
+                            label={pelicula.codigo}
+                            value={pelicula.codigo}
                             />
                        ))}
                     </Picker>
