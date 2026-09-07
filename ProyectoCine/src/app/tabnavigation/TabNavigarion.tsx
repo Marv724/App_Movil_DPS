@@ -18,6 +18,7 @@ export default function App(){
                 <Tab.Screen name="Funciones" component={FuncionScreen} />
                 <Tab.Screen name="Reservas" component={ReservaScreen} />
                 <Tab.Screen name="Dashboard" component={DashBoardScreen} />
+                <Tab.Screen name="Escaner" component={Escaner} />
             </Tab.Navigator>
         </NavigationContainer>
     );
