@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { TouchableOpacity, Text, StyleSheet } from "react-native";
-import CarteleraCliente from "../screens/CarteleraClienteScreen";
+// Importa ClienteLayout (que incluye Cartelera + Mis Reservas)
+import ClienteLayout from "../screens/clienteLayout";
 import AdminTabs from "../app/tabnavigation/AdminTabs";
 import AuthModal from "../app/clients/AuthModal";
 
@@ -39,9 +40,9 @@ export default function RootNavigator() {
       >
         <Stack.Screen
           name="Cartelera"
-          component={CarteleraCliente}
+          component={ClienteLayout} // <-- Cambiado de CarteleraClienteScreen a ClienteLayout
           options={({ navigation }) => ({
-            title: "🎬 Cartelera Cine",
+            title: "🎬 Cine App",
             headerRight: () => (
               <TouchableOpacity
                 style={styles.adminBtn}
