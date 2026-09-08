@@ -1,187 +1,220 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Modal,
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   StyleSheet,
   Alert,
-  ViewStyle,
+  ScrollView,
 } from "react-native";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import { Funcion } from "../../types/funcion";
+import { Reserva } from "../../types/reserva";
 import { addReserva } from "../../redux/slices/reservasSlice";
-import { generarAsientos } from "../../helpers/generarAsiento";
-import { AsientoFuncion } from "../../types/asientofuncion";
 
-interface Props {
+interface ModalReservaProps {
   visible: boolean;
   funcion: Funcion | null;
   onClose: () => void;
 }
 
-export default function ModalReserva({ visible, funcion, onClose }: Props) {
+export default function ModalReserva({
+  visible,
+  funcion,
+  onClose,
+}: ModalReservaProps) {
   const dispatch = useAppDispatch();
-  const salas = useAppSelector((state) => state.salas.salas);
+
+  // 1. Redux Selectors
   const peliculas = useAppSelector((state) => state.peliculas.peliculas);
+  const salas = useAppSelector((state) => state.salas.salas);
   const reservas = useAppSelector((state) => state.reservas.reservas);
 
-  const [mapaAsientos, setMapaAsientos] = useState<AsientoFuncion[]>([]);
+  // 2. React State
+  const [asientosSeleccionados, setAsientosSeleccionados] = useState<string[]>([]);
 
-  // 1. Obtener la película y asegurar que el precio incremente $5 por asiento seleccionable
-  const peliculaActual = peliculas.find((p: any) => {
-    const idPeliEnFuncion = (funcion as any)?.idPelicula || (funcion as any)?.peliculaId || (funcion as any)?.pelicula;
-    return (
-      p.codigo === idPeliEnFuncion ||
-      p.nombre === idPeliEnFuncion ||
-      p.titulo === idPeliEnFuncion
+  // 3. React Hooks (useMemo) - Deben ejecutarse ANTES de cualquier 'return'
+  const peliculaAsociada = useMemo(() => {
+    if (!funcion) return null;
+    const codigoPeli = (funcion as any).peliculaCodigo || (funcion as any).idPelicula;
+    return peliculas.find(
+      (p) =>
+        p.codigo?.toString().trim() === codigoPeli?.toString().trim() ||
+        p.nombre === codigoPeli
     );
-  });
+  }, [peliculas, funcion]);
 
-  // Si la película tiene precio se usa, si es 0 o no existe, el valor por defecto es $5.00
-  const precioUnitario = peliculaActual?.precio && peliculaActual.precio > 0 ? peliculaActual.precio : 5;
+  const salaAsociada = useMemo(() => {
+    if (!funcion) return null;
+    const idSala = funcion.salaId || (funcion as any).idSala;
+    return salas.find((s: any) => s.id === idSala || s.nombre === idSala);
+  }, [salas, funcion]);
 
-  useEffect(() => {
-    if (visible && funcion) {
-      const sala = salas.find(
-        (s: any) =>
-          s.id === (funcion as any).idSala ||
-          s.id === (funcion as any).salaId ||
-          s.nombre === (funcion as any).idSala ||
-          s.nombre === (funcion as any).sala
-      );
+  const asientosOcupados = useMemo(() => {
+    if (!funcion) return [];
+    return reservas
+      .filter((r) => r.funcionId === funcion.id)
+      .flatMap((r) => r.asientos || []);
+  }, [reservas, funcion]);
 
-      const filas = sala?.filas || 5;
-      const columnas = sala?.columnas || 6;
+  const { filas, columnas } = useMemo(() => {
+    const totalFilasNum = (salaAsociada as any)?.filas || (salaAsociada as any)?.numFilas || 6;
+    const totalColsNum =
+      (salaAsociada as any)?.columnas ||
+      (salaAsociada as any)?.numColumnas ||
+      ((salaAsociada as any)?.capacidad
+        ? Math.ceil(((salaAsociada as any)?.capacidad || 36) / totalFilasNum)
+        : 6);
 
-      const asientosBase = generarAsientos(filas, columnas);
+    const letras = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
+    const arrayFilas = letras.slice(0, Math.min(totalFilasNum, letras.length));
+    const arrayCols = Array.from({ length: totalColsNum }, (_, i) => i + 1);
 
-      // Obtener los IDs o identificadores de los asientos reservados previamente para esta función
-      const asientosOcupadosIds = reservas
-        .filter((r: any) => r.funcionId === (funcion as any).id)
-        .flatMap((r: any) => r.asientos || []);
+    return { filas: arrayFilas, columnas: arrayCols };
+  }, [salaAsociada]);
 
-      const mapaInicial: AsientoFuncion[] = asientosBase.map((asiento: any) => {
-        // Soporta comparación por ID numérico o por código de etiqueta ("A1", "A", etc.)
-        const estaOcupado =
-          asientosOcupadosIds.includes(asiento.id.toString()) ||
-          asientosOcupadosIds.includes(asiento.numero) ||
-          asientosOcupadosIds.includes(asiento.codigo);
+  // 4. Retorno anticipado (DESPUÉS de todos los Hooks)
+  if (!funcion) return null;
 
-        return {
-          asiento,
-          estado: estaOcupado ? "ocupado" : "libre",
-        };
-      });
+  // Variables calculadas
+  const nombrePelicula = peliculaAsociada?.nombre || "Película no encontrada";
+  const nombreSala = salaAsociada?.nombre || "Sala Principal";
+  const precioUnitario = peliculaAsociada?.precio ?? 5.0;
+  const totalCalculado = asientosSeleccionados.length * precioUnitario;
 
-      setMapaAsientos(mapaInicial);
-    }
-  }, [visible, funcion]);
-
-  const toggleAsiento = (id: number) => {
-    setMapaAsientos((prev) =>
-      prev.map((item: any) => {
-        if (item.asiento.id !== id || item.estado === "ocupado") return item;
-        return {
-          ...item,
-          estado: item.estado === "elegido" ? "libre" : "elegido",
-        };
-      })
-    );
-  };
-
-  const asientosElegidos = mapaAsientos.filter((a) => a.estado === "elegido");
-  
-  // El precio incrementa automáticamente $5 por cada asiento seleccionado
-  const totalPagar = precioUnitario * asientosElegidos.length;
-
-  const handleConfirmarReserva = () => {
-    if (asientosElegidos.length === 0) {
-      Alert.alert("Selección vacía", "Por favor selecciona al menos un asiento.");
+  const toggleAsiento = (asientoId: string) => {
+    if (asientosOcupados.includes(asientoId)) {
+      Alert.alert("Asiento ocupado", "Este asiento ya ha sido reservado.");
       return;
     }
 
-    const nuevaReserva = {
-      id: Date.now().toString(),
-      funcionId: (funcion as any).id,
-      cantidad: asientosElegidos.length,
-      asientos: asientosElegidos.map((a: any) => a.asiento.id.toString()),
-      total: totalPagar,
+    if (asientosSeleccionados.includes(asientoId)) {
+      setAsientosSeleccionados(
+        asientosSeleccionados.filter((id) => id !== asientoId)
+      );
+    } else {
+      setAsientosSeleccionados([...asientosSeleccionados, asientoId]);
+    }
+  };
+
+  const handleConfirmar = () => {
+    if (asientosSeleccionados.length === 0) {
+      Alert.alert("Atención", "Por favor selecciona al menos un asiento.");
+      return;
+    }
+
+    const nuevaReserva: Reserva = {
+      id: String(Date.now()),
+      funcionId: funcion.id,
+      asientos: asientosSeleccionados,
+      total: totalCalculado,
+      cantidad: asientosSeleccionados.length,
       fechaReserva: new Date().toISOString(),
     };
 
     dispatch(addReserva(nuevaReserva));
-
-    Alert.alert(
-      "¡Reserva Confirmada! 🎟️",
-      `Has reservado ${asientosElegidos.length} asiento(s) por un total de $${totalPagar.toFixed(2)}.`
-    );
+    Alert.alert("¡Éxito!", "Tu reserva se ha procesado correctamente.");
+    setAsientosSeleccionados([]);
     onClose();
   };
 
-  if (!funcion) return null;
+  const handleClose = () => {
+    setAsientosSeleccionados([]);
+    onClose();
+  };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
       <View style={styles.overlay}>
-        <View style={styles.container}>
-          <Text style={styles.title}>Reservar Asientos</Text>
-          <Text style={styles.subtitle}>
-            {peliculaActual?.nombre || "Película"} — ${precioUnitario.toFixed(2)} c/u
+        <View style={styles.cardModal}>
+          <Text style={styles.modalTitle}>Reservar Asientos</Text>
+
+          <Text style={styles.modalSubtitle}>
+            {nombrePelicula} ({nombreSala}) — ${precioUnitario.toFixed(2)} c/u
           </Text>
 
-          <Text style={styles.sectionTitle}>PANTALLA DEL CINE 🎬</Text>
-          <View style={styles.pantallaLine} />
+          <Text style={styles.screenHeader}>PANTALLA DEL CINE 🎬</Text>
+          <View style={styles.screenDivider} />
 
-          <ScrollView
-            contentContainerStyle={styles.gridAsientos}
-            showsVerticalScrollIndicator={false}
-          >
-            {mapaAsientos.map((item: any) => {
-              const { id, numero } = item.asiento;
-              const { estado } = item;
+          {/* Grilla Dinámica de Asientos */}
+          <ScrollView style={styles.gridScroll} contentContainerStyle={styles.gridContainer}>
+            {filas.map((fila) => (
+              <View key={fila} style={styles.filaRow}>
+                {columnas.map((col) => {
+                  const asientoId = `${fila}${col}`;
+                  const isSelected = asientosSeleccionados.includes(asientoId);
+                  const isOccupied = asientosOcupados.includes(asientoId);
 
-              let styleAsiento: ViewStyle = styles.asientoLibre;
-              if (estado === "ocupado") styleAsiento = styles.asientoOcupado; // Rojo por defecto
-              if (estado === "elegido") styleAsiento = styles.asientoElegido; // Amarillo al seleccionar
-
-              return (
-                <TouchableOpacity
-                  key={id}
-                  style={[styles.asiento, styleAsiento]}
-                  disabled={estado === "ocupado"}
-                  onPress={() => toggleAsiento(id)}
-                >
-                  <Text style={styles.asientoTexto}>{numero}</Text>
-                </TouchableOpacity>
-              );
-            })}
+                  return (
+                    <TouchableOpacity
+                      key={asientoId}
+                      disabled={isOccupied}
+                      style={[
+                        styles.asientoBox,
+                        isSelected && styles.asientoSelected,
+                        isOccupied && styles.asientoOccupied,
+                      ]}
+                      onPress={() => toggleAsiento(asientoId)}
+                    >
+                      <Text
+                        style={[
+                          styles.asientoText,
+                          isSelected && styles.asientoTextSelected,
+                          isOccupied && styles.asientoTextOccupied,
+                        ]}
+                      >
+                        {asientoId}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ))}
           </ScrollView>
 
-          {/* Sección de resumen con textos ajustados */}
-          <View style={styles.resumenContainer}>
-            <View style={styles.resumenCol}>
-              <Text style={styles.resumenLabel}>Asientos:</Text>
-              <Text style={styles.resumenValue} numberOfLines={1}>
-                {asientosElegidos.length > 0
-                  ? asientosElegidos.map((a: any) => a.asiento.numero).join(", ")
+          {/* Leyenda de estado de asientos */}
+          <View style={styles.legendRow}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendBox, styles.asientoBox]} />
+              <Text style={styles.legendText}>Libre</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendBox, styles.asientoSelected]} />
+              <Text style={styles.legendText}>Selección</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendBox, styles.asientoOccupied]} />
+              <Text style={styles.legendText}>Ocupado</Text>
+            </View>
+          </View>
+
+          {/* Resumen de Compra Dinámico */}
+          <View style={styles.footerSummary}>
+            <View>
+              <Text style={styles.labelAsientos}>Asientos:</Text>
+              <Text style={styles.valueAsientos}>
+                {asientosSeleccionados.length > 0
+                  ? asientosSeleccionados.join(", ")
                   : "Ninguno"}
               </Text>
             </View>
 
-            <View style={styles.resumenColRight}>
-              <Text style={styles.totalLabel}>Total:</Text>
-              <Text style={styles.totalValue}>${totalPagar.toFixed(2)}</Text>
+            <View style={styles.totalBox}>
+              <Text style={styles.labelTotal}>Total</Text>
+              <Text style={styles.valueTotal}>
+                ${totalCalculado.toFixed(2)}
+              </Text>
             </View>
           </View>
 
-          <TouchableOpacity style={styles.btnPagar} onPress={handleConfirmarReserva}>
-            <Text style={styles.btnPagarText}>Confirmar</Text>
+          {/* Botones */}
+          <TouchableOpacity style={styles.btnConfirm} onPress={handleConfirmar}>
+            <Text style={styles.btnConfirmText}>Confirmar</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.btnCancelar} onPress={onClose}>
-            <Text style={styles.btnCancelarText}>Cancelar</Text>
+          <TouchableOpacity style={styles.btnCancel} onPress={handleClose}>
+            <Text style={styles.btnCancelText}>Cancelar</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -192,133 +225,161 @@ export default function ModalReserva({ visible, funcion, onClose }: Props) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.75)",
+    backgroundColor: "rgba(0, 0, 0, 0.85)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 16,
+    paddingHorizontal: 16,
   },
-  container: {
-    width: "92%",
-    maxHeight: "85%",
+  cardModal: {
+    width: "100%",
+    maxHeight: "90%",
     backgroundColor: "#111827",
     borderRadius: 16,
     padding: 20,
+    alignItems: "center",
     borderWidth: 1,
     borderColor: "#1E293B",
   },
-  title: {
-    color: "#F8FAFC",
+  modalTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    textAlign: "center",
+    color: "#F8FAFC",
   },
-  subtitle: {
+  modalSubtitle: {
+    fontSize: 13,
     color: "#94A3B8",
-    fontSize: 14,
-    textAlign: "center",
     marginTop: 4,
-    marginBottom: 14,
-  },
-  sectionTitle: {
-    color: "#64748B",
-    fontSize: 11,
+    marginBottom: 12,
     textAlign: "center",
-    textTransform: "uppercase",
+  },
+  screenHeader: {
+    fontSize: 11,
+    color: "#64748B",
+    fontWeight: "600",
     letterSpacing: 1,
   },
-  pantallaLine: {
+  screenDivider: {
     height: 3,
     backgroundColor: "#38BDF8",
+    width: "80%",
+    marginTop: 6,
+    marginBottom: 16,
     borderRadius: 2,
-    marginVertical: 8,
   },
-  gridAsientos: {
+  gridScroll: {
+    width: "100%",
+    maxHeight: 260,
+  },
+  gridContainer: {
+    alignItems: "center",
+    paddingBottom: 10,
+  },
+  filaRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 12,
+    gap: 6,
+    marginBottom: 6,
   },
-  asiento: {
-    width: 42,
-    height: 42,
-    borderRadius: 8,
+  asientoBox: {
+    width: 38,
+    height: 38,
+    backgroundColor: "#1E293B",
+    borderRadius: 6,
     justifyContent: "center",
     alignItems: "center",
-  },
-  asientoLibre: {
-    backgroundColor: "#1E293B",
     borderWidth: 1,
     borderColor: "#334155",
   },
-  // Amarillo cuando se está seleccionando
-  asientoElegido: {
+  asientoSelected: {
     backgroundColor: "#EAB308",
+    borderColor: "#CA8A04",
   },
-  // Rojo cuando ya fue seleccionado/reservado con anterioridad
-  asientoOcupado: {
-    backgroundColor: "#EF4444",
-    opacity: 0.8,
+  // 🔴 Color Rojo para los asientos Ocupados
+  asientoOccupied: {
+    backgroundColor: "#7F1D1D", // Rojo oscuro
+    borderColor: "#EF4444",     // Borde rojo brillante
   },
-  asientoTexto: {
-    color: "#F8FAFC",
-    fontSize: 12,
+  asientoText: {
+    color: "#94A3B8",
     fontWeight: "bold",
+    fontSize: 11,
   },
-  resumenContainer: {
+  asientoTextSelected: {
+    color: "#0F172A",
+  },
+  asientoTextOccupied: {
+    color: "#FCA5A5", // Texto en rojo claro
+  },
+  legendRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  legendBox: {
+    width: 14,
+    height: 14,
+    borderRadius: 3,
+  },
+  legendText: {
+    color: "#94A3B8",
+    fontSize: 11,
+  },
+  footerSummary: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    width: "100%",
     marginVertical: 12,
     paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: "#1E293B",
   },
-  resumenCol: {
-    flex: 1,
-    marginRight: 8,
+  labelAsientos: {
+    color: "#64748B",
+    fontSize: 12,
   },
-  resumenColRight: {
+  valueAsientos: {
+    color: "#F8FAFC",
+    fontWeight: "bold",
+    fontSize: 13,
+    marginTop: 2,
+    maxWidth: 180,
+  },
+  totalBox: {
     alignItems: "flex-end",
   },
-  resumenLabel: {
-    color: "#94A3B8",
-    fontSize: 13,
+  labelTotal: {
+    color: "#64748B",
+    fontSize: 12,
   },
-  resumenValue: {
-    color: "#F8FAFC",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  totalLabel: {
+  valueTotal: {
     color: "#38BDF8",
-    fontSize: 13,
     fontWeight: "bold",
+    fontSize: 18,
   },
-  totalValue: {
-    color: "#38BDF8",
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  btnPagar: {
+  btnConfirm: {
     backgroundColor: "#38BDF8",
     paddingVertical: 12,
     borderRadius: 8,
+    width: "100%",
     alignItems: "center",
-    marginTop: 4,
+    marginBottom: 8,
   },
-  btnPagarText: {
+  btnConfirmText: {
     color: "#0F172A",
     fontWeight: "bold",
     fontSize: 15,
   },
-  btnCancelar: {
-    paddingVertical: 10,
-    alignItems: "center",
-    marginTop: 4,
+  btnCancel: {
+    paddingVertical: 6,
   },
-  btnCancelarText: {
-    color: "#94A3B8",
-    fontSize: 13,
+  btnCancelText: {
+    color: "#64748B",
+    fontSize: 14,
   },
 });
