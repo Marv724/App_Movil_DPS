@@ -1,0 +1,32 @@
+  const guardar = () => {
+    const qreserva: Reserva = {
+      ...reserva,
+      id: reserva.id || Date.now().toString(),
+      fechaReserva: reserva.fechaReserva || new Date().toISOString()
+    }
+
+    dispatch(addReserva(reserva));
+    dispatch(selectReserva(null));
+    setReserva(reservaIni);
+    setreservaqr(qreserva);
+  };
+
+  if(reservaqr){
+    return(
+      <View style={styles.cardContainer}>
+        <Text style={styles.titleHeader}>Reserva QR</Text>
+        <Qrdisplay
+        data={{
+          id: reservaqr.id,
+          funcionId: reservaqr.funcionId,
+          asientos: reservaqr.asientos,
+          total: reservaqr.total
+        }}
+        label="Tu codigo de serva"
+        />
+        <TouchableOpacity style={styles.submitButton} onPress={() => setreservaqr(null)} >
+          <Text style={styles.submitButtonText}>Hacer otra reservas</Text>
+        </TouchableOpacity>
+      </View>
+    )
+  }
